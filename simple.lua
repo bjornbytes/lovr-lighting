@@ -1,51 +1,43 @@
-local vertex = [[
-// Declare two variables that we are going to calculate in the vertex shader and send to the
-// fragment shader.
-out vec3 lightDirection;
-out vec3 normalDirection;
-
-// This variable defines the position of the light source.  It could be a uniform if you want
-// to change it over time (see commented line).
-vec3 lightPosition = vec3(0, 0, 5);
-// uniform vec3 lightPosition; // use shader:send('lightPosition', { x, y, z }) to update
-
-vec4 position(mat4 projection, mat4 transform, vec4 vertex) {
-
-  // Use matrices to transform position vectors and normal vectors.  They are given to us in
-  // "local" space but we want them to be in world space.  We do this by multiplying the vertex
-  // by the "lovrTransform" matrix given to us by LÖVR.
-  vec3 transformedPosition = vec3(lovrTransform * vec4(lovrPosition, 1));
-  vec3 transformedNormal = vec3(lovrTransform * vec4(lovrNormal, 0));
-
-  // Now that we have everything in world space, we can compute the direction between the vertex
-  // and the light.  We also normalize everything (make the lengths of the vectors 1) to avoid
-  // errors in calculations.
-  lightDirection = normalize(lightPosition - transformedPosition);
-  normalDirection = normalize(transformedNormal);
-
-  // This is the behavior for the default vertex shader, we leave it here so everything works!
-  return projection * transform * vertex;
-}
-]]
-
-local fragment = [[
-// Declare the two variables that are sent to us by the vertex shader
-in vec3 lightDirection;
-in vec3 normalDirection;
-
-vec4 color(vec4 graphicsColor, sampler2D image, vec2 uv) {
-
-  // Use the dot product to calculate the intensity of the light.  It will be between 0 and 1 if
-  // the surface is facing the light, or less than zero if the surface is facing away from the
-  // light.
-  float lightIntensity = max(dot(lightDirection, normalDirection), 0);
-
-  // Calculate the final color for this little pixel!
-  vec4 lightColor = vec4(vec3(lightIntensity), 1.);
-  return lightColor * graphicsColor * texture(image, uv);
-}
-]]
-
 return function()
-  return lovr.graphics.newShader(vertex, fragment)
+  return lovr.graphics.newShader([[
+    out vec3 lightDirection;
+    out vec3 normalDirection;
+
+    uniform vec3 lightPosition = vec3(0, 10, 10);
+
+    vec4 position(mat4 projection, mat4 transform, vec4 vertex) {
+      vec4 vVertex = transform * vec4(lovrPosition, 1.);
+      vec4 vLight = lovrView * vec4(lightPosition, 1.);
+
+      lightDirection = normalize(vec3(vLight - vVertex));
+      normalDirection = normalize(lovrNormalMatrix * lovrNormal);
+
+      return projection * transform * vertex;
+    }
+  ]], [[
+    in vec3 lightDirection;
+    in vec3 normalDirection;
+
+    vec3 cAmbient = vec3(.2);
+    vec3 cDiffuse = vec3(.8);
+    vec3 cSpecular = vec3(.2);
+
+    vec4 color(vec4 graphicsColor, sampler2D image, vec2 uv) {
+      float diffuse = max(dot(normalDirection, lightDirection), 0.);
+      float specular = 0.;
+
+      if (diffuse > 0.) {
+        vec3 r = reflect(lightDirection, normalDirection);
+        vec3 viewDirection = normalize(-vec3(gl_FragCoord));
+
+        float specularAngle = max(dot(r, viewDirection), 0.);
+        specular = pow(specularAngle, 5.);
+      }
+
+      vec3 cFinal = vec3(diffuse) * cDiffuse + vec3(specular) * cSpecular;
+      cFinal = clamp(cFinal, cAmbient, vec3(1.));
+      cFinal = pow(cFinal, vec3(.4545));
+      return vec4(cFinal, 1.) * graphicsColor * texture(image, uv);
+    }
+  ]])
 end
