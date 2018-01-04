@@ -1,11 +1,13 @@
 local g = lovr.graphics
-local simple = require 'simple'
 
-function lovr.load()
-  g.setShader(simple())
-end
+local shaders = {
+  require('phong')(),
+  require('normal')()
+}
 
 function lovr.draw()
-  local angle = lovr.timer.getTime() * 2
-  g.cube('fill', 0, 1.7, -1, .5, angle, -.5, .2, .3)
+  local t = lovr.timer.getTime()
+  local shaderIndex = 1 + (math.floor(t * .5) % #shaders)
+  g.setShader(shaders[shaderIndex])
+  g.cube('fill', 0, 1.7, -1, .5, t * 2, t / 2, t / 3, t / 4)
 end
