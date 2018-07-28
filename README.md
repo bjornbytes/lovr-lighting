@@ -27,3 +27,4 @@ Shaders
   ambient/diffuse/specular colors.  Includes specular reflections.
 - Normal - Colors pixels based on their vertex normal.  Can be used to debug problems with vertex
   normals and also looks really cool.
+- Depth - Visualizes the depth buffer.  Pixels closer to the camera will be darker.
