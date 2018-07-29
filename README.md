@@ -28,3 +28,5 @@ Shaders
 - Normal - Colors pixels based on their vertex normal.  Can be used to debug problems with vertex
   normals and also looks really cool.
 - Depth - Visualizes the depth buffer.  Pixels closer to the camera will be darker.
+- PBR - A basic PBR shader (WIP).  Make sure you set `t.gammacorrect = true` in `conf.lua` when you use
+  this.

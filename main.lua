@@ -3,7 +3,8 @@ local g = lovr.graphics
 local shaders = {
   require('phong')(),
   require('normal')(),
-  require('depth')()
+  require('depth')(),
+  require('pbr')()
 }
 
 function lovr.draw()
